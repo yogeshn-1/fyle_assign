@@ -4,15 +4,17 @@ const paginationContainer=document.getElementById("pagination_container")
 const token="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"
 const username="UlisesGascon"
 const url = `https://api.github.com/users/${username}`;
-const repoUrl=`${url}/repos`;
+const repoUrl=`${url}/repos?page=1&per_page=100`;
+const repoTagUrl = `https://api.github.com/repos/${username}`;
 const headers = { Authorization: `token ${token}` };
+
 let repoPerPage=10;
 let userRepoGlobal=null
+let repoTopic=null
 
 fetch(url,{headers})
     .then(res=>res.json())
     .then(userData => {
-        console.log(userData)
     const userInfoElement = document.getElementById('owner_name');
     userInfoElement.innerHTML = `${userData.name}`;
 
@@ -33,6 +35,21 @@ fetch(url,{headers})
     console.error(error);
 });
 
+function getTags(repo,tagdiv){
+    fetch(`${repoTagUrl}/${repo.name}/topics`, { headers })
+        .then(res => res.json())
+        .then(topics => {
+            repoTopic=topics
+            repoTopic.names.forEach(name=>{
+            tagdiv.innerHTML+=`
+            <span class="mx-1 p-1 bg-body-tertiary rounded-1 fs-6" role="button">${name}<span>
+            `})
+        })
+        .catch(error => {
+            console.error('Error fetching topics:', error);
+         })
+}
+
 function displayPage(page){
     repoContainer.innerHTML = '';
     const startIndex = (page - 1) * repoPerPage;
@@ -46,6 +63,10 @@ function displayPage(page){
             <h5>${repo.name}</h5>
             <p>${repo.description || 'No description available'}</p>
         `;
+        const tagdiv=document.createElement('div');
+        tagdiv.classList.add("d-flex","m-0")
+        getTags(repo,tagdiv)
+        repoDiv.appendChild(tagdiv)
         repoContainer.appendChild(repoDiv);
     });
 }
@@ -66,6 +87,7 @@ fetch(repoUrl,{headers})
     .then(res=>res.json())
     .then(userRepo=>{
         userRepoGlobal=userRepo
+        console.log(userRepoGlobal)
         displayPage(1);
         createPageButtons()
     })
@@ -73,14 +95,14 @@ fetch(repoUrl,{headers})
         console.error(error);
     });
 
-    let repoCount=document.getElementById("repo_per_page")
-    repoCount.addEventListener("change",function(e){
-        repoPerPage=e.target.value
-        displayPage(1)
-        createPageButtons()
-    })
+let repoCount=document.getElementById("repo_per_page")
+repoCount.addEventListener("change",function(e){
+    repoPerPage=e.target.value
+    displayPage(1)
+    createPageButtons()
+})
 
-    document.addEventListener('DOMContentLoaded', function () {
-        const mySelect = document.getElementById('repo_per_page');
-        mySelect.selectedIndex = 0;
-    });
+document.addEventListener('DOMContentLoaded', function () {
+    const repoSelect = document.getElementById('repo_per_page');
+    repoSelect.selectedIndex = 0;
+});
