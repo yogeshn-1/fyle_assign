@@ -4,13 +4,15 @@ const paginationContainer=document.getElementById("pagination_container")
 const token="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"
 const username="UlisesGascon"
 const url = `https://api.github.com/users/${username}`;
-const repoUrl=`${url}/repos?page=1&per_page=100`;
+const baserepoUrl=`${url}/repos`;
+const initialRepo=`${baserepoUrl}?page=1&per_page=10`;
 const repoTagUrl = `https://api.github.com/repos/${username}`;
 const headers = { Authorization: `token ${token}` };
 
 let repoPerPage=10;
 let userRepoGlobal=null
 let repoTopic=null
+let currentPage=1
 
 fetch(url,{headers})
     .then(res=>res.json())
@@ -35,6 +37,19 @@ fetch(url,{headers})
     console.error(error);
 });
 
+function fetchRepo(url){
+    fetch(url,{headers})
+    .then(res=>res.json())
+    .then(userRepo=>{
+        userRepoGlobal=userRepo
+        displayRepo()
+        createPageButtons()
+    })
+    .catch(error => {
+        console.error(error);
+    });
+}
+
 function getTags(repo,tagdiv){
     fetch(`${repoTagUrl}/${repo.name}/topics`, { headers })
         .then(res => res.json())
@@ -50,14 +65,11 @@ function getTags(repo,tagdiv){
          })
 }
 
-function displayPage(page){
+function displayRepo(){
     repoContainer.innerHTML = '';
-    const startIndex = (page - 1) * repoPerPage;
-    const endIndex = startIndex + repoPerPage;
-    const reposToDisplay = userRepoGlobal.slice(startIndex, endIndex);
-    reposToDisplay.forEach(repo => {
+    userRepoGlobal.forEach(repo => {
         const repoDiv = document.createElement('div');
-        repoDiv.classList.add("m-2","p-2", "bg-success-subtle","border","border-1","repo_card","rounded-1")
+        repoDiv.classList.add("m-2","p-2", "bg-success-subtle","repo_card","rounded-1","d-flex","flex-column","justify-content-center")
         repoDiv.id = repo.id;
         repoDiv.innerHTML = `
             <h5>${repo.name}</h5>
@@ -73,36 +85,34 @@ function displayPage(page){
 
 function createPageButtons() {
     paginationContainer.innerHTML=''
-    const totalPages = Math.ceil(userRepoGlobal.length / repoPerPage);
+    const totalPages = repoPerPage==10?10:repoPerPage==20?5:repoPerPage==50?2:1;
     for (let i = 1; i <= totalPages; i++) {
         const button = document.createElement('button');
         button.classList.add('btn', 'btn-outline-primary', 'page-btn');
         button.textContent = i;
-        button.addEventListener('click', () => displayPage(i));
+        button.addEventListener('click', () => {
+            currentPage = i;
+            repoUrl=baserepoUrl+`?page=${i}`+`&per_page=${repoPerPage}`
+            fetchRepo(repoUrl)
+        });
+        if (i === currentPage) {
+            button.classList.add('active');
+        }
         paginationContainer.appendChild(button);
     }
 }
 
-fetch(repoUrl,{headers})
-    .then(res=>res.json())
-    .then(userRepo=>{
-        userRepoGlobal=userRepo
-        console.log(userRepoGlobal)
-        displayPage(1);
-        createPageButtons()
-    })
-    .catch(error => {
-        console.error(error);
-    });
-
 let repoCount=document.getElementById("repo_per_page")
 repoCount.addEventListener("change",function(e){
     repoPerPage=e.target.value
-    displayPage(1)
-    createPageButtons()
+    currentPage=1
+    repoUrl=baserepoUrl+`?page=${currentPage}`+`&per_page=${repoPerPage}`
+    fetchRepo(repoUrl)
 })
 
 document.addEventListener('DOMContentLoaded', function () {
     const repoSelect = document.getElementById('repo_per_page');
     repoSelect.selectedIndex = 0;
 });
+
+fetchRepo(initialRepo)
