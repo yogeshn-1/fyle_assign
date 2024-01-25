@@ -1,13 +1,13 @@
 const repoContainer=document.getElementById("repo_container")
 const paginationContainer=document.getElementById("pagination_container")
 
-const token="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"
+const token="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";
 const username="UlisesGascon"
 const url = `https://api.github.com/users/${username}`;
 const baserepoUrl=`${url}/repos`;
 const initialRepo=`${baserepoUrl}?page=1&per_page=10`;
 const repoTagUrl = `https://api.github.com/repos/${username}`;
-const headers = { Authorization: `token ${token}` };
+const headers = { Authorization: `Basic ${token}` };
 
 let repoPerPage=10;
 let userRepoGlobal=null
